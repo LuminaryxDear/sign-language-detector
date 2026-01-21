@@ -45,14 +45,23 @@ const SignLanguageApp = () => {
   const classifyGesture = (landmarks) => {
     if (!landmarks || landmarks.length === 0) return null;
 
-    const features = extractFeatures(landmarks[0]);
-    const prediction = mockPredict(features);
+    const numHands = landmarks.length;
+
+    let features1 = extractFeatures(landmarks[0] || []);
+    let features2 =
+      numHands > 1 ? extractFeatures(landmarks[1]) : new Array(78).fill(0);
+
+    const features = features1.concat(features2);
+
+    const prediction = mockPredict(features, numHands);
 
     return prediction;
   };
 
   const extractFeatures = (handLandmarks) => {
     const features = [];
+    if (handLandmarks.length === 0) return new Array(78).fill(0);
+
     handLandmarks.forEach((lm) => {
       features.push(lm.x, lm.y, lm.z);
     });
@@ -71,11 +80,11 @@ const SignLanguageApp = () => {
     });
 
     const fingerChains = [
-      [1, 2, 3, 4],
-      [5, 6, 7, 8],
-      [9, 10, 11, 12],
-      [13, 14, 15, 16],
-      [17, 18, 19, 20],
+      [1, 2, 3, 4], // thumb
+      [5, 6, 7, 8], // index
+      [9, 10, 11, 12], // middle
+      [13, 14, 15, 16], // ring
+      [17, 18, 19, 20], // pinky
     ];
 
     fingerChains.forEach((chain) => {
@@ -106,27 +115,34 @@ const SignLanguageApp = () => {
     return (angle * 180) / Math.PI;
   };
 
-  const mockPredict = (features) => {
-    const tipDistances = features.slice(63, 68);
-    const avgDistance =
-      tipDistances.reduce((a, b) => a + b, 0) / tipDistances.length;
+  const mockPredict = (features, numHands) => {
+    // Extract avg distance for hand 1
+    const tipDist1 = features.slice(63, 68);
+    const avg1 = tipDist1.reduce((a, b) => a + b, 0) / tipDist1.length;
+
+    let selectedGesture;
+
+    if (numHands === 1) {
+      // For one hand, map avg1 (assume 0-0.5) to A-Z
+      const index = Math.min(25, Math.floor(avg1 * 52)); // Scale to 0-25
+      selectedGesture = String.fromCharCode(65 + index);
+    } else {
+      // For two hands, use avg for hand 2, map to two-hand letters (M, N, P, Q based on images)
+      const tipDist2 = features.slice(63 + 78, 68 + 78);
+      const avg2 = tipDist2.reduce((a, b) => a + b, 0) / tipDist2.length;
+      const twoHandLetters = ["M", "N", "P", "Q"];
+      const index =
+        Math.floor(((avg1 + avg2) / 2) * twoHandLetters.length) %
+        twoHandLetters.length;
+      selectedGesture = twoHandLetters[index];
+    }
 
     const mockProbs = {};
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach((letter) => {
       mockProbs[letter] = Math.random() * 0.5;
     });
 
-    let selectedGesture;
-    if (avgDistance < 0.15) {
-      selectedGesture = "A";
-      mockProbs["A"] = 0.85 + Math.random() * 0.1;
-    } else if (avgDistance < 0.25) {
-      selectedGesture = "B";
-      mockProbs["B"] = 0.8 + Math.random() * 0.15;
-    } else {
-      selectedGesture = "C";
-      mockProbs["C"] = 0.75 + Math.random() * 0.2;
-    }
+    mockProbs[selectedGesture] = 0.85 + Math.random() * 0.1;
 
     const sum = Object.values(mockProbs).reduce((a, b) => a + b, 0);
     Object.keys(mockProbs).forEach((key) => {
@@ -396,10 +412,10 @@ const SignLanguageApp = () => {
           <div>
             <h1 className="text-4xl font-bold flex items-center gap-3">
               <Hand className="w-10 h-10" />
-              SIBI Sign Language Detection
+              BISINDO Sign Language Detection
             </h1>
             <p className="text-gray-300 mt-2">
-              Real-time A-Z Detection | Non-mirrored
+              Real-time A-Z Detection | Supports 1-2 Hands | Non-mirrored
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -525,6 +541,7 @@ const SignLanguageApp = () => {
               <li>• Tunggu cooldown sebelum gesture berikutnya</li>
               <li>• Kamera tidak mirror (seperti orang lain melihat)</li>
               <li>• Landmark sudah disesuaikan posisinya</li>
+              <li>• Mendukung gesture 1 atau 2 tangan untuk huruf A-Z</li>
             </ul>
           </div>
         </div>
@@ -588,9 +605,11 @@ const SignLanguageApp = () => {
           <div className="bg-yellow-900 bg-opacity-50 rounded-xl p-4 text-sm">
             <p className="font-bold mb-2">⚠️ Catatan:</p>
             <p className="text-gray-300">
-              Prediksi masih menggunakan mock. Ganti fungsi{" "}
+              Prediksi masih menggunakan mock yang mendukung A-Z dan 1-2 tangan.
+              Ganti fungsi{" "}
               <code className="bg-black px-1 rounded">mockPredict()</code>{" "}
-              dengan model machine learning asli Anda.
+              dengan model machine learning asli Anda untuk akurasi BISINDO
+              sebenarnya.
             </p>
           </div>
         </div>
