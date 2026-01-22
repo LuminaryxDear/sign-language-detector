@@ -13,8 +13,10 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-const MEDIAPIPE_HANDS_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js";
-const MEDIAPIPE_CAMERA_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+const MEDIAPIPE_HANDS_URL =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js";
+const MEDIAPIPE_CAMERA_URL =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
 
 const SignLanguageApp = () => {
   const videoRef = useRef(null);
@@ -56,7 +58,10 @@ const SignLanguageApp = () => {
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      const mobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        ) || window.innerWidth < 768;
       setIsMobile(mobile);
     };
     checkMobile();
@@ -68,13 +73,16 @@ const SignLanguageApp = () => {
     if (currentGesture && confidence > 0.2) {
       detectionStateRef.current.sequence.push(currentGesture);
       setDetectedSequence(detectionStateRef.current.sequence.join(""));
-      
-      setRecentDetections(prev => [...prev.slice(-4), {
-        gesture: currentGesture,
-        confidence: confidence,
-        timestamp: Date.now()
-      }]);
-      
+
+      setRecentDetections((prev) => [
+        ...prev.slice(-4),
+        {
+          gesture: currentGesture,
+          confidence: confidence,
+          timestamp: Date.now(),
+        },
+      ]);
+
       playDetectionSound();
       setDebugMessage(`✓ Added: ${currentGesture}`);
     }
@@ -100,7 +108,8 @@ const SignLanguageApp = () => {
 
     const numHands = landmarks.length;
     let features1 = extractFeatures(landmarks[0] || []);
-    let features2 = numHands > 1 ? extractFeatures(landmarks[1]) : new Array(78).fill(0);
+    let features2 =
+      numHands > 1 ? extractFeatures(landmarks[1]) : new Array(78).fill(0);
     const features = features1.concat(features2);
     const prediction = improvedMockPredict(features, numHands, landmarks);
 
@@ -120,15 +129,29 @@ const SignLanguageApp = () => {
 
     tips.forEach((tipIdx) => {
       const tip = handLandmarks[tipIdx];
-      const dist = Math.sqrt((tip.x - wrist.x) ** 2 + (tip.y - wrist.y) ** 2 + (tip.z - wrist.z) ** 2);
+      const dist = Math.sqrt(
+        (tip.x - wrist.x) ** 2 +
+          (tip.y - wrist.y) ** 2 +
+          (tip.z - wrist.z) ** 2,
+      );
       features.push(dist);
     });
 
-    const fingerChains = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
+    const fingerChains = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+      [13, 14, 15, 16],
+      [17, 18, 19, 20],
+    ];
 
     fingerChains.forEach((chain) => {
       for (let i = 0; i < chain.length - 2; i++) {
-        const angle = calculateAngle(handLandmarks[chain[i]], handLandmarks[chain[i + 1]], handLandmarks[chain[i + 2]]);
+        const angle = calculateAngle(
+          handLandmarks[chain[i]],
+          handLandmarks[chain[i + 1]],
+          handLandmarks[chain[i + 2]],
+        );
         features.push(angle);
       }
     });
@@ -158,13 +181,16 @@ const SignLanguageApp = () => {
 
     if (numHands === 1) {
       const hand = landmarks[0];
-      
-      const isFingerOpen = (tipIdx, pipIdx) => hand[tipIdx].y < hand[pipIdx].y - 0.04;
-      const isFingerClosed = (tipIdx, pipIdx) => hand[tipIdx].y > hand[pipIdx].y + 0.02;
+
+      const isFingerOpen = (tipIdx, pipIdx) =>
+        hand[tipIdx].y < hand[pipIdx].y - 0.04;
+      const isFingerClosed = (tipIdx, pipIdx) =>
+        hand[tipIdx].y > hand[pipIdx].y + 0.02;
       const thumbOpen = Math.abs(hand[4].x - hand[3].x) > 0.06;
       const thumbClosed = Math.abs(hand[4].x - hand[3].x) < 0.03;
-      const thumbTouchIndex = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y) < 0.06;
-      
+      const thumbTouchIndex =
+        Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y) < 0.06;
+
       const fingerStates = {
         thumb: thumbOpen,
         index: isFingerOpen(8, 6),
@@ -173,7 +199,12 @@ const SignLanguageApp = () => {
         pinky: isFingerOpen(20, 18),
       };
 
-      const openFingers = [fingerStates.index, fingerStates.middle, fingerStates.ring, fingerStates.pinky].filter(Boolean).length;
+      const openFingers = [
+        fingerStates.index,
+        fingerStates.middle,
+        fingerStates.ring,
+        fingerStates.pinky,
+      ].filter(Boolean).length;
 
       // Improved gesture detection dengan lebih strict rules
       if (openFingers === 0 && thumbClosed) {
@@ -194,22 +225,46 @@ const SignLanguageApp = () => {
       } else if (openFingers === 3 && thumbTouchIndex && !fingerStates.index) {
         selectedGesture = "F";
         maxProb = 0.84;
-      } else if (openFingers === 1 && fingerStates.index && thumbOpen && hand[8].x > hand[5].x + 0.05) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        thumbOpen &&
+        hand[8].x > hand[5].x + 0.05
+      ) {
         selectedGesture = "G";
         maxProb = 0.78;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && thumbOpen) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        thumbOpen
+      ) {
         selectedGesture = "H";
         maxProb = 0.87;
       } else if (openFingers === 1 && fingerStates.pinky && !thumbOpen) {
         selectedGesture = "I";
         maxProb = 0.85;
-      } else if (openFingers === 1 && fingerStates.pinky && hand[20].y > hand[18].y) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.pinky &&
+        hand[20].y > hand[18].y
+      ) {
         selectedGesture = "J";
         maxProb = 0.76;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && thumbTouchIndex) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        thumbTouchIndex
+      ) {
         selectedGesture = "K";
         maxProb = 0.83;
-      } else if (openFingers === 1 && fingerStates.index && thumbOpen && hand[4].y < hand[8].y - 0.08) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        thumbOpen &&
+        hand[4].y < hand[8].y - 0.08
+      ) {
         selectedGesture = "L";
         maxProb = 0.86;
       } else if (openFingers === 0 && thumbOpen && hand[4].y > hand[8].y) {
@@ -221,44 +276,92 @@ const SignLanguageApp = () => {
       } else if (thumbTouchIndex && openFingers === 0) {
         selectedGesture = "O";
         maxProb = 0.88;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && hand[8].y > hand[6].y) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        hand[8].y > hand[6].y
+      ) {
         selectedGesture = "P";
         maxProb = 0.77;
-      } else if (openFingers === 1 && fingerStates.index && thumbOpen && hand[8].y > hand[5].y) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        thumbOpen &&
+        hand[8].y > hand[5].y
+      ) {
         selectedGesture = "Q";
         maxProb = 0.75;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && Math.abs(hand[8].x - hand[12].x) < 0.03) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        Math.abs(hand[8].x - hand[12].x) < 0.03
+      ) {
         selectedGesture = "R";
         maxProb = 0.84;
       } else if (openFingers === 0 && thumbOpen && hand[4].x > hand[3].x) {
         selectedGesture = "S";
         maxProb = 0.83;
-      } else if (openFingers === 1 && fingerStates.index && thumbTouchIndex && hand[8].y < hand[5].y) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        thumbTouchIndex &&
+        hand[8].y < hand[5].y
+      ) {
         selectedGesture = "T";
         maxProb = 0.81;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && !thumbOpen) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        !thumbOpen
+      ) {
         selectedGesture = "U";
         maxProb = 0.85;
-      } else if (openFingers === 2 && fingerStates.index && fingerStates.middle && Math.abs(hand[8].x - hand[12].x) > 0.05) {
+      } else if (
+        openFingers === 2 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        Math.abs(hand[8].x - hand[12].x) > 0.05
+      ) {
         selectedGesture = "V";
         maxProb = 0.87;
-      } else if (openFingers === 3 && fingerStates.index && fingerStates.middle && fingerStates.ring) {
+      } else if (
+        openFingers === 3 &&
+        fingerStates.index &&
+        fingerStates.middle &&
+        fingerStates.ring
+      ) {
         selectedGesture = "W";
         maxProb = 0.86;
-      } else if (openFingers === 1 && fingerStates.index && hand[8].y > hand[6].y + 0.04) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        hand[8].y > hand[6].y + 0.04
+      ) {
         selectedGesture = "X";
-        maxProb = 0.80;
+        maxProb = 0.8;
       } else if (openFingers === 1 && fingerStates.pinky && thumbOpen) {
         selectedGesture = "Y";
         maxProb = 0.85;
-      } else if (openFingers === 1 && fingerStates.index && Math.abs(hand[8].x - hand[0].x) > 0.12) {
+      } else if (
+        openFingers === 1 &&
+        fingerStates.index &&
+        Math.abs(hand[8].x - hand[0].x) > 0.12
+      ) {
         selectedGesture = "Z";
         maxProb = 0.74;
       }
     } else if (numHands === 2) {
-      const distBetweenWrists = Math.sqrt((landmarks[0][0].x - landmarks[1][0].x) ** 2 + (landmarks[0][0].y - landmarks[1][0].y) ** 2);
+      const distBetweenWrists = Math.sqrt(
+        (landmarks[0][0].x - landmarks[1][0].x) ** 2 +
+          (landmarks[0][0].y - landmarks[1][0].y) ** 2,
+      );
       const twoHandLetters = ["M", "N", "P", "Q"];
-      const index = Math.floor(distBetweenWrists * twoHandLetters.length) % twoHandLetters.length;
+      const index =
+        Math.floor(distBetweenWrists * twoHandLetters.length) %
+        twoHandLetters.length;
       selectedGesture = twoHandLetters[index];
       maxProb = 0.75;
     }
@@ -289,22 +392,25 @@ const SignLanguageApp = () => {
     if (conf >= CONFIG.CONFIDENCE_THRESHOLD && gesture) {
       state.predictionBuffer.push(gesture);
       state.stabilityBuffer.push(gesture);
-      
+
       if (state.predictionBuffer.length > CONFIG.BUFFER_SIZE) {
         state.predictionBuffer.shift();
       }
       if (state.stabilityBuffer.length > 5) {
         state.stabilityBuffer.shift();
       }
-      
+
       const uniqueGestures = new Set(state.stabilityBuffer);
       const stability = 1 - (uniqueGestures.size - 1) / 4;
       setGestureStability(Math.max(0, stability));
-      
+
       state.noGestureStartTime = 0;
     } else {
       if (!state.noGestureStartTime) state.noGestureStartTime = now;
-      if (now - state.noGestureStartTime > CONFIG.NO_GESTURE_SPACE_DURATION && state.sequence.length > 0) {
+      if (
+        now - state.noGestureStartTime > CONFIG.NO_GESTURE_SPACE_DURATION &&
+        state.sequence.length > 0
+      ) {
         state.sequence.push(" ");
         setDetectedSequence(state.sequence.join(""));
         state.noGestureStartTime = now;
@@ -325,14 +431,19 @@ const SignLanguageApp = () => {
     state.predictionBuffer.forEach((g) => {
       counts[g] = (counts[g] || 0) + 1;
     });
-    const smoothed = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+    const smoothed = Object.keys(counts).reduce((a, b) =>
+      counts[a] > counts[b] ? a : b,
+    );
 
     if (smoothed === state.currentGesture) {
       const holdTime = now - state.gestureStartTime;
       const progress = Math.min(holdTime / CONFIG.HOLD_DURATION, 1);
       setHoldProgress(progress);
 
-      if (holdTime >= CONFIG.HOLD_DURATION && gestureStability >= CONFIG.STABILITY_THRESHOLD) {
+      if (
+        holdTime >= CONFIG.HOLD_DURATION &&
+        gestureStability >= CONFIG.STABILITY_THRESHOLD
+      ) {
         if (now - state.lastDetectionTime >= CONFIG.COOLDOWN_DURATION) {
           state.sequence.push(smoothed);
           setDetectedSequence(state.sequence.join(""));
@@ -342,13 +453,16 @@ const SignLanguageApp = () => {
           state.stabilityBuffer = [];
           setHoldProgress(0);
           setGestureStability(0);
-          
-          setRecentDetections(prev => [...prev.slice(-4), {
-            gesture: smoothed,
-            confidence: conf,
-            timestamp: now
-          }]);
-          
+
+          setRecentDetections((prev) => [
+            ...prev.slice(-4),
+            {
+              gesture: smoothed,
+              confidence: conf,
+              timestamp: now,
+            },
+          ]);
+
           playDetectionSound();
         }
       }
@@ -367,7 +481,11 @@ const SignLanguageApp = () => {
         return;
       }
       const elapsed = Date.now() - state.lastDetectionTime;
-      setCooldownProgress(elapsed >= CONFIG.COOLDOWN_DURATION ? 1 : elapsed / CONFIG.COOLDOWN_DURATION);
+      setCooldownProgress(
+        elapsed >= CONFIG.COOLDOWN_DURATION
+          ? 1
+          : elapsed / CONFIG.COOLDOWN_DURATION,
+      );
     }, 100);
 
     return () => clearInterval(interval);
@@ -394,7 +512,8 @@ const SignLanguageApp = () => {
         await loadScript(MEDIAPIPE_CAMERA_URL);
 
         const hands = new window.Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+          locateFile: (file) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
 
         hands.setOptions({
@@ -515,7 +634,13 @@ const SignLanguageApp = () => {
   const drawLandmarks = (ctx, landmarks, style) => {
     landmarks.forEach((lm) => {
       ctx.beginPath();
-      ctx.arc(lm.x * ctx.canvas.width, lm.y * ctx.canvas.height, style.radius || 5, 0, 2 * Math.PI);
+      ctx.arc(
+        lm.x * ctx.canvas.width,
+        lm.y * ctx.canvas.height,
+        style.radius || 5,
+        0,
+        2 * Math.PI,
+      );
       ctx.fillStyle = style.color;
       ctx.fill();
       ctx.strokeStyle = "#FFFFFF";
@@ -535,11 +660,13 @@ const SignLanguageApp = () => {
     if (state.sequence.length > 0) {
       state.sequence.pop();
       setDetectedSequence(state.sequence.join(""));
-      setRecentDetections(prev => prev.slice(0, -1));
+      setRecentDetections((prev) => prev.slice(0, -1));
     }
   };
 
-  const sortedProbs = Object.entries(probabilities).sort(([, a], [, b]) => b - a).slice(0, 6);
+  const sortedProbs = Object.entries(probabilities)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 6);
 
   const getConfidenceColor = (conf) => {
     if (conf >= 0.7) return "text-green-400";
@@ -565,12 +692,19 @@ const SignLanguageApp = () => {
                 BISINDO Pro
               </h1>
               <p className="text-gray-300 mt-2 text-sm md:text-base flex items-center gap-2">
-                {isMobile ? <Smartphone className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
-                AI-Powered Sign Language Detection | {isMobile ? "📱 Mobile" : "💻 Desktop"}
+                {isMobile ? (
+                  <Smartphone className="w-4 h-4" />
+                ) : (
+                  <Monitor className="w-4 h-4" />
+                )}
+                AI-Powered Sign Language Detection |{" "}
+                {isMobile ? "📱 Mobile" : "💻 Desktop"}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`px-4 py-2 rounded-xl font-bold backdrop-blur-md border ${isModelLoaded ? "bg-green-500/20 border-green-500/50 text-green-300" : "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"}`}>
+              <div
+                className={`px-4 py-2 rounded-xl font-bold backdrop-blur-md border ${isModelLoaded ? "bg-green-500/20 border-green-500/50 text-green-300" : "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"}`}
+              >
                 <Zap className="w-5 h-5 inline mr-2" />
                 {isModelLoaded ? "Ready" : "Loading"}
               </div>
@@ -603,14 +737,17 @@ const SignLanguageApp = () => {
               <div className="backdrop-blur-xl bg-black/60 rounded-2xl p-4 border border-white/20">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    {currentGesture && confidence >= CONFIG.CONFIDENCE_THRESHOLD ? (
+                    {currentGesture &&
+                    confidence >= CONFIG.CONFIDENCE_THRESHOLD ? (
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-8 h-8 text-green-400 animate-pulse" />
                         <div>
                           <div className="text-3xl md:text-4xl font-black text-green-400">
                             {currentGesture}
                           </div>
-                          <div className={`text-sm ${getConfidenceColor(confidence)}`}>
+                          <div
+                            className={`text-sm ${getConfidenceColor(confidence)}`}
+                          >
                             {(confidence * 100).toFixed(1)}% confident
                           </div>
                         </div>
@@ -693,8 +830,12 @@ const SignLanguageApp = () => {
             <div className="absolute bottom-4 left-4 right-4">
               <div className="backdrop-blur-xl bg-black/60 rounded-2xl p-4 border border-white/20">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-400 font-semibold">DETECTED SEQUENCE</div>
-                  <div className="text-xs text-gray-400">Length: {detectedSequence.length}</div>
+                  <div className="text-xs text-gray-400 font-semibold">
+                    DETECTED SEQUENCE
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Length: {detectedSequence.length}
+                  </div>
                 </div>
                 <div className="text-2xl md:text-3xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text min-h-[40px] break-all mb-3">
                   {detectedSequence || "(empty)"}
@@ -743,13 +884,19 @@ const SignLanguageApp = () => {
           {/* Instructions */}
           <div className="backdrop-blur-xl bg-gradient-to-br from-blue-900/30 to-violet-900/30 rounded-2xl p-4 md:p-5 border border-white/20">
             <h3 className="font-bold mb-3 flex items-center gap-2 text-lg">
-              {isMobile ? <Smartphone className="w-5 h-5 text-cyan-400" /> : <Monitor className="w-5 h-5 text-cyan-400" />}
+              {isMobile ? (
+                <Smartphone className="w-5 h-5 text-cyan-400" />
+              ) : (
+                <Monitor className="w-5 h-5 text-cyan-400" />
+              )}
               📋 {isMobile ? "Mobile" : "Desktop"} Instructions
             </h3>
             <ul className="text-sm space-y-2 text-gray-300">
               <li className="flex items-start gap-2">
                 <span className="text-green-400 font-bold">•</span>
-                <span>Hold gesture steady for ~0.6s to register automatically</span>
+                <span>
+                  Hold gesture steady for ~0.6s to register automatically
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-yellow-400 font-bold">•</span>
@@ -763,7 +910,9 @@ const SignLanguageApp = () => {
                 <>
                   <li className="flex items-start gap-2">
                     <span className="text-cyan-400 font-bold">📱</span>
-                    <span className="font-semibold text-cyan-300">Tap "FORCE ADD" button to manually add gesture</span>
+                    <span className="font-semibold text-cyan-300">
+                      Tap "FORCE ADD" button to manually add gesture
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-400 font-bold">•</span>
@@ -774,7 +923,9 @@ const SignLanguageApp = () => {
                 <>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400 font-bold">⌨️</span>
-                    <span className="font-semibold text-green-300">Press ENTER key to manually add gesture</span>
+                    <span className="font-semibold text-green-300">
+                      Press ENTER key to manually add gesture
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-400 font-bold">•</span>
@@ -807,19 +958,23 @@ const SignLanguageApp = () => {
                 sortedProbs.map(([letter, prob], idx) => (
                   <div key={letter} className="group">
                     <div className="flex justify-between text-sm mb-1.5">
-                      <span className={`font-bold text-lg ${idx === 0 ? 'text-cyan-400' : 'text-gray-300'}`}>
+                      <span
+                        className={`font-bold text-lg ${idx === 0 ? "text-cyan-400" : "text-gray-300"}`}
+                      >
                         {letter}
                       </span>
-                      <span className={`font-semibold ${getConfidenceColor(prob)}`}>
+                      <span
+                        className={`font-semibold ${getConfidenceColor(prob)}`}
+                      >
                         {(prob * 100).toFixed(1)}%
                       </span>
                     </div>
                     <div className="h-3 bg-gray-700/50 rounded-full overflow-hidden backdrop-blur-sm">
                       <div
                         className={`h-full transition-all duration-300 ${
-                          idx === 0 
-                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50' 
-                            : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                          idx === 0
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50"
+                            : "bg-gradient-to-r from-gray-500 to-gray-600"
                         }`}
                         style={{ width: `${prob * 100}%` }}
                       />
@@ -844,21 +999,29 @@ const SignLanguageApp = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-gray-400 text-sm">Sequence Length</span>
-                <span className="font-bold text-xl text-cyan-400">{detectedSequence.length}</span>
+                <span className="font-bold text-xl text-cyan-400">
+                  {detectedSequence.length}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-gray-400 text-sm">Hands Detected</span>
-                <span className="font-bold text-xl text-green-400">{handsCount}</span>
+                <span className="font-bold text-xl text-green-400">
+                  {handsCount}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-gray-400 text-sm">Confidence</span>
-                <span className={`font-bold text-xl ${getConfidenceColor(confidence)}`}>
+                <span
+                  className={`font-bold text-xl ${getConfidenceColor(confidence)}`}
+                >
                   {(confidence * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <span className="text-gray-400 text-sm">Stability</span>
-                <span className={`font-bold text-xl ${getConfidenceColor(gestureStability)}`}>
+                <span
+                  className={`font-bold text-xl ${getConfidenceColor(gestureStability)}`}
+                >
                   {(gestureStability * 100).toFixed(0)}%
                 </span>
               </div>
@@ -879,14 +1042,22 @@ const SignLanguageApp = () => {
                 Recent Detections
               </h3>
               <div className="space-y-2">
-                {recentDetections.slice().reverse().map((det, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                    <span className="font-bold text-2xl text-green-400">{det.gesture}</span>
-                    <span className="text-xs text-gray-400">
-                      {(det.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                ))}
+                {recentDetections
+                  .slice()
+                  .reverse()
+                  .map((det, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 bg-white/5 rounded-lg"
+                    >
+                      <span className="font-bold text-2xl text-green-400">
+                        {det.gesture}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {(det.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -913,12 +1084,29 @@ const SignLanguageApp = () => {
 
 if (typeof window !== "undefined") {
   window.HAND_CONNECTIONS = [
-    [0, 1], [1, 2], [2, 3], [3, 4],
-    [0, 5], [5, 6], [6, 7], [7, 8],
-    [0, 9], [9, 10], [10, 11], [11, 12],
-    [0, 13], [13, 14], [14, 15], [15, 16],
-    [0, 17], [17, 18], [18, 19], [19, 20],
-    [5, 9], [9, 13], [13, 17],
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [0, 5],
+    [5, 6],
+    [6, 7],
+    [7, 8],
+    [0, 9],
+    [9, 10],
+    [10, 11],
+    [11, 12],
+    [0, 13],
+    [13, 14],
+    [14, 15],
+    [15, 16],
+    [0, 17],
+    [17, 18],
+    [18, 19],
+    [19, 20],
+    [5, 9],
+    [9, 13],
+    [13, 17],
   ];
 }
 
